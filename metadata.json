@@ -1,0 +1,6 @@
+{
+  "name": "AI-Powered Marketing Brief & Ads Generator",
+  "description": "Generates a comprehensive marketing brief for a given website URL by analyzing its content using Gemini and Google Search.",
+  "requestFramePermissions": [],
+  "prompt": ""
+}
