@@ -65,8 +65,6 @@ def parse_ad_copy_text(raw_text: str):
 
 def format_ad_copy_table(content: str):
     """Formats Headlines and Descriptions into a Streamlit table."""
-    # Note: re.search() is case-insensitive here due to re.IGNORECASE flag in calling function if present, 
-    # but the prompt structure ensures consistent casing.
     headlines_match = re.search(r'Headlines:\s*([\s\S]*?)(Descriptions:|$)', content, re.IGNORECASE)
     descriptions_match = re.search(r'Descriptions:\s*([\s\S]*)', content, re.IGNORECASE)
     
@@ -298,7 +296,7 @@ Implicit Negative Intents to Avoid:
         if not website_only:
             brief_config["config"] = {"tools": [{"googleSearch": {}}]}
         
-        # FIX APPLIED: Corrected to use snake_case generate_content for modern SDK
+        # Corrected to use snake_case generate_content
         brief_response = ai.models.generate_content(**brief_config)
         internal_marketing_brief = brief_response.text
         
@@ -321,7 +319,7 @@ Implicit Negative Intents to Avoid:
 
     # 4. Second API Call: Generate Ad Copy Assets
     
-    # Ad Copy Prompt (Highly verbose to ensure model adheres to constraints)
+    # SIMPLIFIED AD COPY PROMPT
     ad_copy_prompt = f"""
 You are the world's unparalleled Google Ads copywriter and the pinnacle of prompt engineering.
 Your mission is to generate Google Ads assets based on the following Marketing Brief.
@@ -331,58 +329,31 @@ MARKETING BRIEF:
 {internal_marketing_brief}
 ---
 
-INSTRUCTIONS:
+INSTRUCTIONS (SIMPLIFIED TO REDUCE OUTPUT VOLUME):
 1.  **Ad Copy Variations:**
     * Analyze the "Specific Services/Product Lines to Feature" section of the Marketing Brief. Count the number of distinct services listed (N) that have actual descriptions (not "Could not determine..." or "could not be verified/detailed"). These lines typically start with "Service/Product [number]".
-    * Generate exactly N distinct "AD COPY VARIATION" blocks. If N is 0 (no services with valid descriptions found), generate one (1) general ad copy variation based on the "Overall Product/Service Category" and "Business Name" from the brief.
-    * For each "AD COPY VARIATION [i]" (where [i] is 1 to N):
-        * Extract the service name from the "Service/Product [i]..." line in the brief. For example, if the line is "Service/Product 1 (User Specified: Smart Thermostats): Smart Thermostats are available...", the service focus is "Smart Thermostats". If it's "Service/Product 2: Custom Software Development: We build custom software...", the focus is "Custom Software Development".
-        * Clearly state which service it focuses on (e.g., "AD COPY VARIATION 1 (Service Focus: [Extracted Service Name from Brief])"). If it's a general ad copy, state "AD COPY VARIATION 1 (General Focus)".
-        * **Geo-Targeting:** Analyze the "Target Geographic Location(s):" section of the Marketing Brief. If specific locations are identified (and not a "Could not determine..." message for that section), naturally incorporate these location names or location-specific phrases (e.g., "Available in [City]", "[Service] near [Location]", "Your Local [Product] Experts in [Region]") into a reasonable subset of the headlines and descriptions to enhance local relevance. Do this subtly and where appropriate. If the brief indicates a national/global service or no specific locations were determined, focus on broader appeal.
-        * **You MUST include the label "Headlines:" followed by the list of headlines.** List them using a dash (-) prefix. Each headline MUST BE **STRICTLY 30 characters or less**. ABSOLUTELY NO MORE THAN 30 characters. You MUST generate **EXACTLY 25 distinct headlines**. NO MORE, NO LESS. If generating specific headlines for the service focus is challenging, you MUST provide **EXACTLY 25 relevant generic headlines** related to the business name or overall product/service category from the Marketing Brief. ALWAYS include the "Headlines:" label and ensure the list under it is NOT empty and contains 25 items.
-        * **You MUST include the label "Descriptions:" followed by the list of descriptions.** List them using a dash (-) prefix. Each description MUST BE **STRICTLY 90 characters or less**. ABSOLUTELY NO MORE THAN 90 characters. You MUST generate **EXACTLY 10 distinct descriptions**. NO MORE, NO LESS. If generating specific descriptions for the service focus is challenging, you MUST provide **EXACTLY 10 relevant generic descriptions** related to the business name or overall product/service category from the Marketing Brief. ALWAYS include the "Descriptions:" label and ensure the list under it is NOT empty and contains 10 items.
-    * Adhere to all Google Ads policies & best practices: hyper-relevance, keyword integration (from brief's "Primary Keywords" if available), clarity, professionalism, no gimmicks, benefit-centricity, strong CTAs (from brief's "Desired Call-to-Action" if available), USP amplification (from brief's "USPs" if available), ethical urgency/scarcity if applicable, social proof if applicable, pain point agitation & solution.
-    * Ensure headline/description variety for A/B testing. Each piece must stand alone or combine effectively.
+    * Generate exactly N distinct "AD COPY VARIATION" blocks. If N is 0 (no services with valid descriptions found), generate one (1) general ad copy variation.
+    * For each "AD COPY VARIATION [i]":
+        * Clearly state the service focus (e.g., "AD COPY VARIATION 1 (Service Focus: [Extracted Service Name from Brief])").
+        * **Headlines:** You MUST generate **EXACTLY 12 distinct headlines**. Each headline MUST BE **STRICTLY 30 characters or less**.
+        * **Descriptions:** You MUST generate **EXACTLY 4 distinct descriptions**. Each description MUST BE **STRICTLY 90 characters or less**.
+        * **Formatting:** You MUST include the labels "Headlines:" and "Descriptions:", and list items using the dash prefix (`- `).
 
-2.  **Sitelinks (4-6 variations):**
-    * Based on the Marketing Brief (especially services, USPs, CTAs, and overall category, if this information was successfully determined).
-    * Each Sitelink MUST adhere to the following STRICT character limits:
-        * Sitelink Text: **STRICTLY 25 characters or less. ABSOLUTELY NO MORE THAN 25 characters.**
-        * Description Line 1: **STRICTLY 35 characters or less. ABSOLUTELY NO MORE THAN 35 characters.**
-        * Description Line 2: **STRICTLY 35 characters or less. ABSOLUTELY NO MORE THAN 35 characters.**
-    * Format:
-        SITELINKS:
-        - Sitelink Text: [Text, adhering to 25 char limit]
-          Description Line 1: [Text, adhering to 35 char limit]
-          Description Line 2: [Text, adhering to 35 char limit]
-        (Repeat for 4-6 variations. Ensure each part meets its specific character limit. If the brief has insufficient detail for specific sitelinks, provide generic ones based on business name/category or state 'Insufficient detail in brief for specific Sitelinks.')
+2.  **Sitelinks (3 variations):**
+    * Generate **EXACTLY 3 Sitelink variations**.
+    * Each Sitelink MUST adhere to the following STRICT character limits: Sitelink Text: **STRICTLY 25 characters or less**. Description Line 1: **STRICTLY 35 characters or less**. Description Line 2: **STRICTLY 35 characters or less**.
+    * Format: Use the multiline format shown in the previous prompt.
 
-3.  **Structured Snippets (2-3 distinct headers):**
-    * Choose appropriate headers (e.g., Services, Types, Brands, Destinations, Models, Courses, Styles) based on the Marketing Brief's "Overall Product/Service Category" and "Specific Services/Product Lines" (if this information was successfully determined).
-    * For each header, list 3-5 relevant values from the brief. Each value MUST BE **STRICTLY 25 characters or less. ABSOLUTELY NO MORE THAN 25 characters.**
-    * Format:
-        STRUCTURED SNIPPETS:
-        Header: [Chosen Header e.g., Services]
-        - [Value 1, adhering to 25 char limit]
-        - [Value 2, adhering to 25 char limit]
-        - [Value 3, adhering to 25 char limit]
-        (Repeat for more values if applicable)
-        Header: [Chosen Header e.g., Types]
-        - [Value 1, adhering to 25 char limit]
-        - ...
-        (Repeat for 2-3 headers. If the brief has insufficient detail for specific snippets, provide generic ones or state 'Insufficient detail in brief for specific Structured Snippets.')
+3.  **Structured Snippets (2 distinct headers):**
+    * Choose 2 appropriate headers (e.g., Services, Types).
+    * For each header, list 3-5 relevant values. Each value MUST BE **STRICTLY 25 characters or less**.
 
-4.  **Callouts (4-6 variations):**
-    * Highlight key benefits, USPs, or offers from the Marketing Brief (especially "USPs", "Promotions/Offers", if this information was successfully determined).
-    * Each callout MUST BE **STRICTLY 25 characters or less. ABSOLUTELY NO MORE THAN 25 characters.**
-    * Format:
-        CALLOUTS:
-        - [Callout Text 1, adhering to 25 char limit]
-        - [Callout Text 2, adhering to 25 char limit]
-        (Repeat for 4-6 variations. If the brief has insufficient detail for specific callouts, provide generic ones or state 'Insufficient detail in brief for specific Callouts.')
+4.  **Callouts (3 variations):**
+    * Generate **EXACTLY 3 Callout variations**.
+    * Each callout MUST BE **STRICTLY 25 characters or less**.
+    * Format: List using the dash prefix (`- `).
 
-Output all sections clearly separated. Ensure absolutely no truncation of text within character limits. Maximize character usage where impactful but never exceed.
-STRICTLY ADHERE TO THE "- " PREFIX FOR LISTS OF HEADLINES, DESCRIPTIONS, SITELINK VALUES, STRUCTURED SNIPPET VALUES, AND CALLOUTS. NO OTHER NUMBERS OR BULLETS.
+Output all sections clearly separated. Adhere STRICTLY to the new reduced character and quantity limits.
 """
 
     st.subheader("Ad Copy Generation")
@@ -395,7 +366,7 @@ STRICTLY ADHERE TO THE "- " PREFIX FOR LISTS OF HEADLINES, DESCRIPTIONS, SITELIN
             "contents": ad_copy_prompt,
         }
         
-        # FIX APPLIED: Corrected to use snake_case generate_content for modern SDK
+        # Corrected to use snake_case generate_content
         adcopy_response = ai.models.generate_content(**adcopy_config)
         raw_ad_copy_text = adcopy_response.text
 
