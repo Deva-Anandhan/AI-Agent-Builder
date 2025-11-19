@@ -65,6 +65,8 @@ def parse_ad_copy_text(raw_text: str):
 
 def format_ad_copy_table(content: str):
     """Formats Headlines and Descriptions into a Streamlit table."""
+    # Note: re.search() is case-insensitive here due to re.IGNORECASE flag in calling function if present, 
+    # but the prompt structure ensures consistent casing.
     headlines_match = re.search(r'Headlines:\s*([\s\S]*?)(Descriptions:|$)', content, re.IGNORECASE)
     descriptions_match = re.search(r'Descriptions:\s*([\s\S]*)', content, re.IGNORECASE)
     
@@ -72,11 +74,11 @@ def format_ad_copy_table(content: str):
     descriptions = []
 
     if headlines_match and headlines_match.group(1):
-        # FIX: Using re.sub() for regex replacement instead of JavaScript literal
+        # Using re.sub() for regex replacement to remove the '- ' prefix
         headlines = [re.sub(r'^- ', '', h.strip()) for h in headlines_match.group(1).split('\n') if h.strip().startswith('- ')]
     
     if descriptions_match and descriptions_match.group(1):
-        # FIX: Using re.sub() for regex replacement instead of JavaScript literal
+        # Using re.sub() for regex replacement to remove the '- ' prefix
         descriptions = [re.sub(r'^- ', '', d.strip()) for d in descriptions_match.group(1).split('\n') if d.strip().startswith('- ')]
         
     max_rows = max(len(headlines), len(descriptions))
@@ -114,7 +116,7 @@ def format_structured_snippets(content: str):
 
 # --- 3. UI DISPLAY ---
 
-# Inject basic CSS styles for a cleaner look, mimicking the original
+# Inject basic CSS styles for a cleaner look
 st.markdown(
     """
     <style>
@@ -185,7 +187,7 @@ def generate_assets(url, focus_services, website_only):
     search_source = f"from the website {url}" if website_only else f"via Google Search for {url}"
     not_found_message_template = f"Could not determine {{section_name}} {search_source}."
 
-    # Logic for Specific Services Section
+    # Logic for Specific Services Section (Highly verbose to ensure model adheres to constraints)
     specific_services_prompt_section = ""
     if focus_services:
         user_services_array = [s.strip() for s in focus_services.split('\n') if s.strip()]
@@ -228,24 +230,58 @@ Service/Product 2: [Concise description of Service/Product 2 identified {search_
 (Continue listing Service/Product 3, Service/Product 4, etc., if clearly identifiable and distinct {search_source})
 """
     
-    # Full Marketing Brief Prompt (Truncated for readability, matching original TSX logic)
+    # Full Marketing Brief Prompt (Highly verbose to ensure model adheres to constraints)
     marketing_brief_prompt = f"""
-IMPORTANT: You MUST generate the complete marketing brief structure as outlined below. For every section, provide the requested information based on your analysis of the website {url} {'content' if website_only else 'using Google Search'}. If, after attempting to {search_method}, you cannot find specific information for a section, you MUST explicitly write a '{not_found_message_template.replace("{{section_name}}", "[section name]")}' message... Address ALL sections.
-{f'\\nIMPORTANT USER FOCUS: The user has specifically requested to focus on the following products/services: "{focus_services}". Please ensure your analysis, especially for "Specific Services/Product Lines to Feature", prioritizes these...\\n' if focus_services else ''}
+IMPORTANT: You MUST generate the complete marketing brief structure as outlined below. For every section, provide the requested information based on your analysis of the website {url} {'content' if website_only else 'using Google Search'}. If, after attempting to {search_method}, you cannot find specific information for a section, you MUST explicitly write a '{not_found_message_template.replace("{{section_name}}", "[section name]")}' message (e.g., '{not_found_message_template.replace("{{section_name}}", "Business Name")}') within that section. DO NOT return an empty response or omit sections. The entire structure must be present in your output. Any sections for which information cannot be found MUST contain the appropriate 'Could not determine...' phrase.
+
+You are an expert marketing strategist. Your mission is to analyze the website at the URL "{url}" and generate a comprehensive Marketing Brief. For each section below, you will {search_method} to find the relevant information. If information for a section cannot be found after a reasonable attempt, explicitly state '{not_found_message_template.replace("{{section_name}}", "[Relevant Section Name]")}'. Address ALL sections.
+{f'\\nIMPORTANT USER FOCUS: The user has specifically requested to focus on the following products/services: "{focus_services}". Please ensure your analysis, especially for "Specific Services/Product Lines to Feature", prioritizes these. For other sections, consider how these focused services might influence the overall strategy.\\n' if focus_services else ''}
 Marketing Brief for Website: {url}
-Business Name: (To determine this, {search_method}. Based on your findings, state the business name. If not clearly identifiable, state '{not_found_message_template.replace("{{section_name}}", "Business Name")}')
-Campaign Goal: (To determine this, {search_method}. Explain your choice briefly based on your findings. If unclear, state '{not_found_message_template.replace("{{section_name}}", "primary campaign goal")}')
-Overall Product/Service Category: (To determine this, {search_method}. Describe the category. If unclear, state '{not_found_message_template.replace("{{section_name}}", "overall product/service category")}')
+
+Business Name:
+(To determine this, {search_method}. Based on your findings, state the business name. If not clearly identifiable, state '{not_found_message_template.replace("{{section_name}}", "Business Name")}')
+
+Campaign Goal:
+(To determine this, {search_method}. Explain your choice briefly based on your findings. If unclear, state '{not_found_message_template.replace("{{section_name}}", "primary campaign goal")}')
+
+Overall Product/Service Category:
+(To determine this, {search_method}. Describe the category. If unclear, state '{not_found_message_template.replace("{{section_name}}", "overall product/service category")}')
+
 {specific_services_prompt_section}
-Target Geographic Location(s): (To determine this, {search_method}. Describe based on your findings. If not determinable or if the service is global/national without specific local focus, state '{not_found_message_template.replace("{{section_name}}", "specific target geographic locations")}, or service appears to be national/global'.)
-Target Audience Profile(s): (To determine this, {search_method}...) Persona 1 Name... (If not determinable, state '{not_found_message_template.replace("{{section_name}}", "Persona 1 details")}'.)
-Primary Keywords (High Intent): (To determine this, {search_method}...) - [Keyword 1 identified {search_source}]...
-Unique Selling Propositions (USPs) / Core Differentiators: (To determine this, {search_method}...) - [USP 1 identified {search_source}]...
-Competitive Landscape (Optional but Recommended): (To determine this, {search_method}...)
-Desired Call-to-Action (CTA): (To determine this, {search_method}...)
-Brand Voice / Tone: (To determine this, {search_method}...)
-Any Current Promotions/Offers: (To determine this, {search_method}...)
-Implicit Negative Intents to Avoid: (To determine this, {search_method}...)
+
+Target Geographic Location(s):
+(To determine this, {search_method}. Describe based on your findings. If not determinable or if the service is global/national without specific local focus, state '{not_found_message_template.replace("{{section_name}}", "specific target geographic locations")}, or service appears to be national/global'.)
+
+Target Audience Profile(s):
+(To determine this, {search_method}. Describe one primary persona. If multiple distinct personas are clearly evident from your findings for {url}, describe a second one.)
+Persona 1 Name (e.g., "Tech-Savvy Startup Founder"): [Describe Demographics, Psychographics, Needs, Pain Points, What they value most, as inferred {search_source}. If not determinable, state '{not_found_message_template.replace("{{section_name}}", "Persona 1 details")}'.]
+(Persona 2 Name (e.g., "Established Enterprise CTO"): [Describe Demographics, Psychographics, Needs, Pain Points, What they value most, as inferred {search_source} if a second distinct persona is evident. Otherwise, omit or state 'Second distinct persona not clearly identifiable {search_source}'.])
+
+Primary Keywords (High Intent):
+(To determine this, {search_method}. List these keywords based on your findings for {url}. If not determinable, state '{not_found_message_template.replace("{{section_name}}", "primary keywords")}')
+- [Keyword 1 identified {search_source}]
+- [Keyword 2 identified {search_source}]
+- ...
+
+Unique Selling Propositions (USPs) / Core Differentiators:
+(To determine this, {search_method}. List 1-3 USPs based on your findings for {url}. If not determinable, state '{not_found_message_template.replace("{{section_name}}", "USPs")}')
+- [USP 1 identified {search_source}]
+- ...
+
+Competitive Landscape (Optional but Recommended):
+(To determine this, {search_method}. Briefly mention 1-2 competitors and a key differentiator for {url} based on your findings. If not determinable, state '{'Competitive landscape cannot be determined from website content alone for ' + url if website_only else not_found_message_template.replace("{{section_name}}", "competitive landscape")}'.)
+
+Desired Call-to-Action (CTA):
+(To determine this, {search_method}. State the main CTA based on your findings for {url}. If multiple, choose the most prominent. If not determinable, state '{not_found_message_template.replace("{{section_name}}", "primary CTA")}')
+
+Brand Voice / Tone:
+(To determine this, {search_method} and describe: "What is the brand voice or tone of the website {url} (e.g., Authoritative & Innovative, Inspiring & Exclusive, Reliable & Empathetic)?". Justify briefly based on your findings. If not determinable, state '{not_found_message_template.replace("{{section_name}}", "brand voice/tone")}')
+
+Any Current Promotions/Offers:
+(To determine this, {search_method}. If yes, describe them based on your findings. If no clear promotions are found on {url}, state 'No current promotions/offers found {search_source}'.)
+
+Implicit Negative Intents to Avoid:
+(To determine this, based on the understanding of {url} {search_source}, suggest: "What are 1-2 keyword intents or search terms that the website {url} should AVOID targeting (e.g., 'free' if it's a premium service)?". If not determinable, state '{not_found_message_template.replace("{{section_name}}", "implicit negative intents")}')
 """
 
     # 3. First API Call: Generate Marketing Brief
@@ -262,7 +298,8 @@ Implicit Negative Intents to Avoid: (To determine this, {search_method}...)
         if not website_only:
             brief_config["config"] = {"tools": [{"googleSearch": {}}]}
         
-        brief_response = ai.models.generateContent(**brief_config)
+        # FIX APPLIED: Corrected to use snake_case generate_content for modern SDK
+        brief_response = ai.models.generate_content(**brief_config)
         internal_marketing_brief = brief_response.text
         
         if not internal_marketing_brief:
@@ -284,7 +321,7 @@ Implicit Negative Intents to Avoid: (To determine this, {search_method}...)
 
     # 4. Second API Call: Generate Ad Copy Assets
     
-    # Ad Copy Prompt (Truncated for brevity, matching original TSX logic and instructions)
+    # Ad Copy Prompt (Highly verbose to ensure model adheres to constraints)
     ad_copy_prompt = f"""
 You are the world's unparalleled Google Ads copywriter and the pinnacle of prompt engineering.
 Your mission is to generate Google Ads assets based on the following Marketing Brief.
@@ -295,14 +332,57 @@ MARKETING BRIEF:
 ---
 
 INSTRUCTIONS:
-1.  **Ad Copy Variations:** Generate exactly N distinct "AD COPY VARIATION" blocks (N = valid services in brief).
-    * For each variation, include **EXACTLY 25 distinct Headlines** (STRICTLY **30 characters or less**) and **EXACTLY 10 distinct Descriptions** (STRICTLY **90 characters or less**).
-    * **MUST** include "Headlines:" and "Descriptions:" labels. **MUST** use the dash prefix (`- `) for all list items.
-2.  **Sitelinks (4-6 variations):** Text (Max 25), Description Line 1 (Max 35), Description Line 2 (Max 35).
-3.  **Structured Snippets (2-3 distinct headers):** Each value (Max 25).
-4.  **Callouts (4-6 variations):** Each callout (Max 25).
+1.  **Ad Copy Variations:**
+    * Analyze the "Specific Services/Product Lines to Feature" section of the Marketing Brief. Count the number of distinct services listed (N) that have actual descriptions (not "Could not determine..." or "could not be verified/detailed"). These lines typically start with "Service/Product [number]".
+    * Generate exactly N distinct "AD COPY VARIATION" blocks. If N is 0 (no services with valid descriptions found), generate one (1) general ad copy variation based on the "Overall Product/Service Category" and "Business Name" from the brief.
+    * For each "AD COPY VARIATION [i]" (where [i] is 1 to N):
+        * Extract the service name from the "Service/Product [i]..." line in the brief. For example, if the line is "Service/Product 1 (User Specified: Smart Thermostats): Smart Thermostats are available...", the service focus is "Smart Thermostats". If it's "Service/Product 2: Custom Software Development: We build custom software...", the focus is "Custom Software Development".
+        * Clearly state which service it focuses on (e.g., "AD COPY VARIATION 1 (Service Focus: [Extracted Service Name from Brief])"). If it's a general ad copy, state "AD COPY VARIATION 1 (General Focus)".
+        * **Geo-Targeting:** Analyze the "Target Geographic Location(s):" section of the Marketing Brief. If specific locations are identified (and not a "Could not determine..." message for that section), naturally incorporate these location names or location-specific phrases (e.g., "Available in [City]", "[Service] near [Location]", "Your Local [Product] Experts in [Region]") into a reasonable subset of the headlines and descriptions to enhance local relevance. Do this subtly and where appropriate. If the brief indicates a national/global service or no specific locations were determined, focus on broader appeal.
+        * **You MUST include the label "Headlines:" followed by the list of headlines.** List them using a dash (-) prefix. Each headline MUST BE **STRICTLY 30 characters or less**. ABSOLUTELY NO MORE THAN 30 characters. You MUST generate **EXACTLY 25 distinct headlines**. NO MORE, NO LESS. If generating specific headlines for the service focus is challenging, you MUST provide **EXACTLY 25 relevant generic headlines** related to the business name or overall product/service category from the Marketing Brief. ALWAYS include the "Headlines:" label and ensure the list under it is NOT empty and contains 25 items.
+        * **You MUST include the label "Descriptions:" followed by the list of descriptions.** List them using a dash (-) prefix. Each description MUST BE **STRICTLY 90 characters or less**. ABSOLUTELY NO MORE THAN 90 characters. You MUST generate **EXACTLY 10 distinct descriptions**. NO MORE, NO LESS. If generating specific descriptions for the service focus is challenging, you MUST provide **EXACTLY 10 relevant generic descriptions** related to the business name or overall product/service category from the Marketing Brief. ALWAYS include the "Descriptions:" label and ensure the list under it is NOT empty and contains 10 items.
+    * Adhere to all Google Ads policies & best practices: hyper-relevance, keyword integration (from brief's "Primary Keywords" if available), clarity, professionalism, no gimmicks, benefit-centricity, strong CTAs (from brief's "Desired Call-to-Action" if available), USP amplification (from brief's "USPs" if available), ethical urgency/scarcity if applicable, social proof if applicable, pain point agitation & solution.
+    * Ensure headline/description variety for A/B testing. Each piece must stand alone or combine effectively.
 
-Output all sections clearly separated. Adhere STRICTLY to all character limits and formatting instructions.
+2.  **Sitelinks (4-6 variations):**
+    * Based on the Marketing Brief (especially services, USPs, CTAs, and overall category, if this information was successfully determined).
+    * Each Sitelink MUST adhere to the following STRICT character limits:
+        * Sitelink Text: **STRICTLY 25 characters or less. ABSOLUTELY NO MORE THAN 25 characters.**
+        * Description Line 1: **STRICTLY 35 characters or less. ABSOLUTELY NO MORE THAN 35 characters.**
+        * Description Line 2: **STRICTLY 35 characters or less. ABSOLUTELY NO MORE THAN 35 characters.**
+    * Format:
+        SITELINKS:
+        - Sitelink Text: [Text, adhering to 25 char limit]
+          Description Line 1: [Text, adhering to 35 char limit]
+          Description Line 2: [Text, adhering to 35 char limit]
+        (Repeat for 4-6 variations. Ensure each part meets its specific character limit. If the brief has insufficient detail for specific sitelinks, provide generic ones based on business name/category or state 'Insufficient detail in brief for specific Sitelinks.')
+
+3.  **Structured Snippets (2-3 distinct headers):**
+    * Choose appropriate headers (e.g., Services, Types, Brands, Destinations, Models, Courses, Styles) based on the Marketing Brief's "Overall Product/Service Category" and "Specific Services/Product Lines" (if this information was successfully determined).
+    * For each header, list 3-5 relevant values from the brief. Each value MUST BE **STRICTLY 25 characters or less. ABSOLUTELY NO MORE THAN 25 characters.**
+    * Format:
+        STRUCTURED SNIPPETS:
+        Header: [Chosen Header e.g., Services]
+        - [Value 1, adhering to 25 char limit]
+        - [Value 2, adhering to 25 char limit]
+        - [Value 3, adhering to 25 char limit]
+        (Repeat for more values if applicable)
+        Header: [Chosen Header e.g., Types]
+        - [Value 1, adhering to 25 char limit]
+        - ...
+        (Repeat for 2-3 headers. If the brief has insufficient detail for specific snippets, provide generic ones or state 'Insufficient detail in brief for specific Structured Snippets.')
+
+4.  **Callouts (4-6 variations):**
+    * Highlight key benefits, USPs, or offers from the Marketing Brief (especially "USPs", "Promotions/Offers", if this information was successfully determined).
+    * Each callout MUST BE **STRICTLY 25 characters or less. ABSOLUTELY NO MORE THAN 25 characters.**
+    * Format:
+        CALLOUTS:
+        - [Callout Text 1, adhering to 25 char limit]
+        - [Callout Text 2, adhering to 25 char limit]
+        (Repeat for 4-6 variations. If the brief has insufficient detail for specific callouts, provide generic ones or state 'Insufficient detail in brief for specific Callouts.')
+
+Output all sections clearly separated. Ensure absolutely no truncation of text within character limits. Maximize character usage where impactful but never exceed.
+STRICTLY ADHERE TO THE "- " PREFIX FOR LISTS OF HEADLINES, DESCRIPTIONS, SITELINK VALUES, STRUCTURED SNIPPET VALUES, AND CALLOUTS. NO OTHER NUMBERS OR BULLETS.
 """
 
     st.subheader("Ad Copy Generation")
@@ -315,7 +395,8 @@ Output all sections clearly separated. Adhere STRICTLY to all character limits a
             "contents": ad_copy_prompt,
         }
         
-        adcopy_response = ai.models.generateContent(**adcopy_config)
+        # FIX APPLIED: Corrected to use snake_case generate_content for modern SDK
+        adcopy_response = ai.models.generate_content(**adcopy_config)
         raw_ad_copy_text = adcopy_response.text
 
         if not raw_ad_copy_text:
@@ -349,6 +430,7 @@ Output all sections clearly separated. Adhere STRICTLY to all character limits a
         elif title.upper() == "STRUCTURED SNIPPETS":
             format_structured_snippets(content)
         else: # Sitelinks and Callouts
+            # Display raw text for these sections as they are already structured lists
             st.code(content, language='text')
 
 # --- 6. EXECUTION ---
